@@ -1,41 +1,104 @@
 import cv2
-import time
+import threading
+from typing import Optional, Tuple, List
 
-RTSP_URL = "rtsp://localhost:8554/cam2"
 
-cap = cv2.VideoCapture(RTSP_URL)
+class RTSPCameraStream:
+    """
+    A class to handle one RTSP stream using OpenCV and threading.
+    """
 
-if not cap.isOpened():
-    print("Failed to open stream:", RTSP_URL)
-    exit()
+    def __init__(self, url: str):
+        self.url = url
+        self.cap = cv2.VideoCapture(self.url)
+        self.is_running = False
+        self.lock = threading.Lock()
+        self.frame: Optional[Tuple[bool, any]] = None
+        self.thread = None
 
-print("Stream opened successfully. Reading frames... (Ctrl+C to stop)")
+    def start(self) -> None:
+        self.is_running = True
+        self.thread = threading.Thread(target=self._update_frame, daemon=True)
+        self.thread.start()
 
-frame_count = 0
-total_frames = 0
-start_time = time.time()
+    def stop(self) -> None:
+        self.is_running = False
+        if self.thread is not None:
+            self.thread.join(timeout=1)
+        if self.cap.isOpened():
+            self.cap.release()
 
-try:
-    while True:
-        ret, frame = cap.read()
-        if not ret:
-            print("Frame not received, retrying...")
-            time.sleep(0.5)
-            continue
+    def _update_frame(self) -> None:
+        while self.is_running:
+            ret, frame = self.cap.read()
+            with self.lock:
+                self.frame = (ret, frame)
 
-        frame_count += 1
-        total_frames += 1
-        elapsed = time.time() - start_time
+    def read(self) -> Tuple[bool, Optional[any]]:
+        with self.lock:
+            if self.frame is not None:
+                ret, frame = self.frame
+                if ret and frame is not None:
+                    return ret, frame.copy()
+                return ret, frame
+            return False, None
 
-        if elapsed >= 1.0:
-            fps = frame_count / elapsed
-            h, w = frame.shape[:2]
-            print(f"FPS: {fps:.2f} | Resolution: {w}x{h} | Total frames: {total_frames}")
-            frame_count = 0
-            start_time = time.time()
 
-except KeyboardInterrupt:
-    print("Stopped by user.")
+def resize_to_same_height(frames, target_height=360):
+    resized = []
+    for frame in frames:
+        h, w = frame.shape[:2]
+        new_width = int(w * (target_height / h))
+        resized_frame = cv2.resize(frame, (new_width, target_height))
+        resized.append(resized_frame)
+    return resized
 
-cap.release()
-print("Stream closed.")
+
+def main():
+    stream_urls: List[str] = [
+        "rtsp://localhost:8554/cam1",
+        "rtsp://localhost:8554/cam2",
+        # add more here
+    ]
+
+    streams = [RTSPCameraStream(url) for url in stream_urls]
+
+    for stream in streams:
+        stream.start()
+
+    try:
+        while True:
+            frames = []
+
+            for i, stream in enumerate(streams):
+                ret, frame = stream.read()
+
+                if ret and frame is not None:
+                    cv2.putText(
+                        frame,
+                        f"cam {i+1}",
+                        (10, 30),
+                        cv2.FONT_HERSHEY_SIMPLEX,
+                        1,
+                        (0, 255, 0),
+                        2
+                    )
+                    frames.append(frame)
+
+            if frames:
+                frames = resize_to_same_height(frames, target_height=360)
+                combined = cv2.hconcat(frames)
+                cv2.imshow("RTSP Streams", combined)
+
+            key = cv2.waitKey(1) & 0xFF
+            if key == 27:  # ESC
+                break
+
+    finally:
+        for stream in streams:
+            stream.stop()
+        cv2.destroyAllWindows()
+
+
+if __name__ == "__main__":
+    main()
