@@ -1,0 +1,58 @@
+# "docker compose up" or  "docker compose up -d" to run
+# links  : rtsp://rtsp-server:8554/cam1
+#          rtsp://rtsp-server:8554/cam2
+
+services:
+  rtsp-server:
+    restart: unless-stopped
+    ports:
+      - "1935:1935"
+      - "8554:8554"
+      - "8888:8888"
+    environment:
+      - RTSP_PROTOCOLS=tcp
+    image: bluenviron/mediamtx
+
+  cam2:
+    restart: unless-stopped
+    image: linuxserver/ffmpeg:version-4.4-cli
+    links:
+      - "rtsp-server:rtsp-server"
+    depends_on:
+      - rtsp-server
+    volumes:
+      - ./video-samples/:/tmp/
+    command: -re -stream_loop -1 -i /tmp/VIRAT_S_050301_00_000000_000036.mp4 -c copy -f rtsp rtsp://rtsp-server:8554/cam1
+
+
+  cam1:
+    restart: unless-stopped
+    image: linuxserver/ffmpeg:version-4.4-cli
+    links:
+      - "rtsp-server:rtsp-server"
+    depends_on:
+      - rtsp-server
+    volumes:
+      - ./video-samples/:/tmp/
+    command: -re -stream_loop -1 -i /tmp/VIRAT_S_050202_10_002159_002233.mp4 -c copy -f rtsp rtsp://rtsp-server:8554/cam2
+
+
+  # webcam:
+  #   restart: unless-stopped
+  #   image: linuxserver/ffmpeg:version-4.4-cli
+  #   devices:
+  #     - /dev/video0:/dev/video0
+  #   links:
+  #     - "rtsp-server:rtsp-server"
+  #   depends_on:
+  #     - rtsp-server
+  #   command: -f v4l2 -framerate 30 -video_size 1280x720 -i /dev/video0 -f rtsp rtsp://rtsp-server:8554/webcam
+
+  # city-traffic:
+  #   restart: unless-stopped
+  #   image: linuxserver/ffmpeg:version-4.4-cli
+  #   links:
+  #     - "rtsp-server:rtsp-server"
+  #   depends_on:
+  #     - rtsp-server
+  #   command: -re -stream_loop -1 -i https://eu-central-1.linodeobjects.com/savant-data/demo/Free_City_Street_Footage.mp4 -c copy -bsf:v h264_mp4toannexb -f rtsp rtsp://rtsp-server:8554/cam1
