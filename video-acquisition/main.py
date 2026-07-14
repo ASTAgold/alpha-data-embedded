@@ -56,8 +56,11 @@ def resize_to_same_height(frames, target_height=360):
 
 def main():
     stream_urls: List[str] = [
-        "rtsp://localhost:8554/cam1",
-        "rtsp://localhost:8554/cam2",
+        "rtsp://192.168.8.95:8554/cam1",
+        "rtsp://192.168.8.95:8554/cam2",
+        # "rtsp://localhost:8554/cam3",
+        # "rtsp://localhost:8554/cam4",
+        # "rtsp://localhost:8554/cam5",
         # add more here
     ]
 

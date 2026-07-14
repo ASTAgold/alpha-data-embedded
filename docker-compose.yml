@@ -13,18 +13,6 @@ services:
       - RTSP_PROTOCOLS=tcp
     image: bluenviron/mediamtx
 
-  cam2:
-    restart: unless-stopped
-    image: linuxserver/ffmpeg:version-4.4-cli
-    links:
-      - "rtsp-server:rtsp-server"
-    depends_on:
-      - rtsp-server
-    volumes:
-      - ./video-samples/:/tmp/
-    command: -re -stream_loop -1 -i /tmp/VIRAT_S_050301_00_000000_000036.mp4 -c copy -f rtsp rtsp://rtsp-server:8554/cam1
-
-
   cam1:
     restart: unless-stopped
     image: linuxserver/ffmpeg:version-4.4-cli
@@ -34,8 +22,52 @@ services:
       - rtsp-server
     volumes:
       - ./video-samples/:/tmp/
-    command: -re -stream_loop -1 -i /tmp/VIRAT_S_050202_10_002159_002233.mp4 -c copy -f rtsp rtsp://rtsp-server:8554/cam2
+    command: -re -stream_loop -1 -i /tmp/VIRAT_S_010115_03_000685_000793.mp4 -c copy -f rtsp rtsp://rtsp-server:8554/cam1
 
+
+  cam2:
+    restart: unless-stopped
+    image: linuxserver/ffmpeg:version-4.4-cli
+    links:
+      - "rtsp-server:rtsp-server"
+    depends_on:
+      - rtsp-server
+    volumes:
+      - ./video-samples/:/tmp/
+    command: -re -stream_loop -1 -i /tmp/VIRAT_S_010204_01_000072_000225.mp4 -c copy -f rtsp rtsp://rtsp-server:8554/cam2
+
+  # cam3:
+  #   restart: unless-stopped
+  #   image: linuxserver/ffmpeg:version-4.4-cli
+  #   links:
+  #     - "rtsp-server:rtsp-server"
+  #   depends_on:
+  #     - rtsp-server
+  #   volumes:
+  #     - ./video-samples/:/tmp/
+  #   command: -re -stream_loop -1 -i /tmp/VIRAT_S_050202_10_002159_002233.mp4 -c copy -f rtsp rtsp://rtsp-server:8554/cam3
+
+  # cam4:
+  #   restart: unless-stopped
+  #   image: linuxserver/ffmpeg:version-4.4-cli
+  #   links:
+  #     - "rtsp-server:rtsp-server"
+  #   depends_on:
+  #     - rtsp-server
+  #   volumes:
+  #     - ./video-samples/:/tmp/
+  #   command: -re -stream_loop -1 -i /tmp/VIRAT_S_050301_00_000000_000036.mp4 -c copy -f rtsp rtsp://rtsp-server:8554/cam4
+
+  # cam5:
+  #   restart: unless-stopped
+  #   image: linuxserver/ffmpeg:version-4.4-cli
+  #   links:
+  #     - "rtsp-server:rtsp-server"
+  #   depends_on:
+  #     - rtsp-server
+  #   volumes:
+  #     - ./video-samples/:/tmp/
+  #   command: -re -stream_loop -1 -i /tmp/VIRAT_S_050301_02_000544_000607.mp4 -c copy -f rtsp rtsp://rtsp-server:8554/cam5
 
   # webcam:
   #   restart: unless-stopped
